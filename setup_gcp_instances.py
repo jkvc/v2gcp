@@ -1,5 +1,6 @@
 from pprint import pprint
 from utils import *
+from termcolor import cprint
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 SETUP_SCRIPT_FILEPATH = os.path.realpath(
@@ -11,9 +12,7 @@ SETUP_SCRIPT_FILEPATH = os.path.realpath(
 
 def run_client_setup(instance):
     client_name = instance['name']
-    print('\n' * 2)
-    print(f'setting up [{client_name}]')
-    print('\n' * 2)
+    cprint(f'>>> setting up [{client_name}]', 'yellow')
 
     zone = instance['zone'].split('/')[-1]
     run_setup_script_cmd = f'gcloud compute ssh --zone {zone} {client_name} < {SETUP_SCRIPT_FILEPATH}'
