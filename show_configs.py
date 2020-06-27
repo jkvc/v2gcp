@@ -6,10 +6,13 @@ import base64
 import qrcode
 
 
-def get_config(client_name):
+def get_config(instance):
+    client_name = instance['name']
     print(f'getting config from [{client_name}]')
+
+    zone = instance['zone'].split('/')[-1]
     config_save_path = os.path.join(SCRIPT_DIR, f'{client_name}_config.json')
-    get_config_cmd = f'gcloud compute scp {client_name}:/etc/v2ray/config.json {config_save_path} > /dev/null'
+    get_config_cmd = f'gcloud compute scp --zone {zone} {client_name}:/etc/v2ray/config.json {config_save_path} > /dev/null'
     get_config_retval = os.system(get_config_cmd)
     assert get_config_retval == 0
 
@@ -50,8 +53,7 @@ if __name__ == "__main__":
     uris = []
 
     for instance in instances_data:
-        name = instance['name']
-        config_data = get_config(name)
+        config_data = get_config(instance)
         v2rayu_config = build_v2rayu_config(instance, config_data)
         uri = build_v2rayu_uri(v2rayu_config)
         uris.append(uri)
