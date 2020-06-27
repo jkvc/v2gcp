@@ -11,17 +11,18 @@ SETUP_SCRIPT_FILEPATH = os.path.realpath(
 
 
 def run_client_setup(instance):
-    client_name = instance['name']
-    cprint(f'>>> setting up [{client_name}]', 'yellow')
+    instance_name = instance['name']
+    cprint(f'>>> begin setup [{get_display_name(instance)}]', 'yellow')
 
     zone = instance['zone'].split('/')[-1]
-    run_setup_script_cmd = f'gcloud compute ssh --zone {zone} {client_name} < {SETUP_SCRIPT_FILEPATH}'
+    run_setup_script_cmd = f'gcloud compute ssh --zone {zone} {instance_name} < {SETUP_SCRIPT_FILEPATH}'
     run_setup_script_retval = os.system(run_setup_script_cmd)
     assert run_setup_script_retval == 0
+    cprint(f'>>>  done setup [{get_display_name(instance)}]', 'green')
+    print()
 
 
 if __name__ == "__main__":
-    instances_data = list_instances()
-
-    for instance in instances_data:
+    instances = list_instances()
+    for instance in instances:
         run_client_setup(instance)
