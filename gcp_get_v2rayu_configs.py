@@ -13,9 +13,10 @@ def get_v2ray_server_config(config):
 
     username = config['username']
     external_ip = config['external_ip']
+    public_key, private_key = get_ssh_key()
 
     config_save_path = os.path.join(SCRIPT_DIR, f'.{display_name}_config.json')
-    get_config_cmd = f'scp -o StrictHostKeyChecking=no {username}@{external_ip}:/etc/v2ray/config.json {config_save_path} > /dev/null 2>&1'
+    get_config_cmd = f'scp -i {private_key} -o StrictHostKeyChecking=no {username}@{external_ip}:/etc/v2ray/config.json {config_save_path} > /dev/null 2>&1'
     get_config_retval = os.system(get_config_cmd)
     assert get_config_retval == 0
 

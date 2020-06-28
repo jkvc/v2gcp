@@ -6,6 +6,26 @@ from termcolor import cprint
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
+def get_ssh_key():
+    ssh_key_dir = os.path.join(SCRIPT_DIR, '.ssh')
+    public_key = os.path.join(ssh_key_dir, 'rsa.pub')
+    private_key = os.path.join(ssh_key_dir, 'rsa')
+
+    already_has_key = (
+        os.path.exists(ssh_key_dir) and
+        os.path.exists(public_key) and
+        os.path.exists(private_key)
+    )
+    if not already_has_key:
+        cprint(f'Generating new rsa keypair to [{private_key}]', 'cyan')
+        if os.path.exists(ssh_key_dir):
+            shutil.rmtree(ssh_key_dir)
+        os.mkdir(ssh_key_dir)
+        os.system(f"ssh-keygen -b 4096 -f {private_key} -q -N ''")
+
+    return public_key, private_key
+
+
 def run_cmd_save_output(cmd, save_filename):
     save_filapath = os.path.join(
         SCRIPT_DIR, save_filename

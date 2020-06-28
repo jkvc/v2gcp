@@ -4,7 +4,21 @@ from utils import *
 FIREWALL_RULE_NAME = 'v2gcp-allow-all'
 INSTANCE_TEMPLATE_NAME = 'v2gcp-template'
 
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
+
 if __name__ == "__main__":
+    # gen ssh key if there's not one already
+    public_key, private_key = get_ssh_key()
+
+    # setup oslogin
+    assert os.system(
+        'gcloud compute project-info add-metadata --metadata enable-oslogin=TRUE'
+    ) == 0
+    assert os.system(
+        f'gcloud compute os-login ssh-keys add --key-file {public_key} > /dev/null'
+    ) == 0
+
     # make a firewall rule network tag that allow all port ingress
     firewall_rule_data = list_firewall_rules()
     firewall_rule_exists = False
