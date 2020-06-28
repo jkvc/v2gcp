@@ -13,7 +13,7 @@ def get_config(instance):
     cprint(f'getting config from [{display_name}]', 'yellow')
 
     zone = instance['zone'].split('/')[-1]
-    config_save_path = os.path.join(SCRIPT_DIR, f'{display_name}_config.json')
+    config_save_path = os.path.join(SCRIPT_DIR, f'.{display_name}_config.json')
     get_config_cmd = f'gcloud compute scp --zone {zone} {instance_name}:/etc/v2ray/config.json {config_save_path} > /dev/null'
     get_config_retval = os.system(get_config_cmd)
     assert get_config_retval == 0
