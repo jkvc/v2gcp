@@ -7,14 +7,15 @@ import qrcode
 from termcolor import cprint
 
 
-def get_config(instance):
-    instance_name = instance['name']
-    display_name = get_display_name(instance)
+def get_v2ray_server_config(config):
+    display_name = config['display_name']
     cprint(f'getting config from [{display_name}]', 'yellow')
 
-    zone = instance['zone'].split('/')[-1]
+    username = config['username']
+    external_ip = config['external_ip']
+
     config_save_path = os.path.join(SCRIPT_DIR, f'.{display_name}_config.json')
-    get_config_cmd = f'gcloud compute scp --zone {zone} {instance_name}:/etc/v2ray/config.json {config_save_path} > /dev/null'
+    get_config_cmd = f'scp -o StrictHostKeyChecking=no {username}@{external_ip}:/etc/v2ray/config.json {config_save_path} > /dev/null 2>&1'
     get_config_retval = os.system(get_config_cmd)
     assert get_config_retval == 0
 
@@ -23,26 +24,21 @@ def get_config(instance):
     return config_data
 
 
-def build_v2rayu_config(instance, config):
-    zone = instance['zone'].split('/')[-1]
+def get_v2rayu_uri(display_name, external_ip, server_config):
     v2rayu_config = {
-        "port": str(config['inbounds'][0]['port']),
-        "ps": get_display_name(instance),
+        "port": str(server_config['inbounds'][0]['port']),
+        "ps": display_name,
         "tls": "none",
-        "id": config['inbounds'][0]['settings']['clients'][0]['id'],
-        "aid": str(config['inbounds'][0]['settings']['clients'][0]['alterId']),
+        "id": server_config['inbounds'][0]['settings']['clients'][0]['id'],
+        "aid": str(server_config['inbounds'][0]['settings']['clients'][0]['alterId']),
         "v": "2",
         "host": "",
         "type": "none",
         "path": "",
         "net": "tcp",
-        "add": instance['networkInterfaces'][0]['accessConfigs'][0]['natIP'],
+        "add": external_ip,
         "sec": "auto"
     }
-    return v2rayu_config
-
-
-def build_v2rayu_uri(v2rayu_config):
     uri_content = json.dumps(v2rayu_config, separators=(',', ':'))
     uri_encoded = 'vmess://' + \
         base64.b64encode(uri_content.encode('ascii')).decode('ascii')
@@ -50,29 +46,32 @@ def build_v2rayu_uri(v2rayu_config):
 
 
 if __name__ == "__main__":
-    instances_data = list_instances()
+    ssh_configs = get_ssh_configs()
 
     uris = []
+    for ssh_config in ssh_configs:
+        try:
+            server_config = get_v2ray_server_config(ssh_config)
+            uri = get_v2rayu_uri(
+                ssh_config['display_name'],
+                ssh_config['external_ip'],
+                server_config
+            )
+            uris.append(uri)
 
-    for instance in instances_data:
-        config_data = get_config(instance)
-        v2rayu_config = build_v2rayu_config(instance, config_data)
-        uri = build_v2rayu_uri(v2rayu_config)
-        uris.append(uri)
+            # build and print qrcode
+            cprint(f'showing qrcode of [{ssh_config["display_name"]}]', 'cyan')
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+            )
+            qr.add_data(uri)
+            qr.print_ascii()
 
-    print()
-    cprint('All URIs:', 'cyan')
+        except AssertionError:
+            cprint(
+                f'Failed to get config from [{ssh_config["display_name"]}]', 'red')
+
+    cprint('All URIs in one blob:', 'cyan')
     for uri in uris:
         print(uri)
-
-    print('\n')
-    for i, instance in enumerate(instances_data):
-        cprint(f'showing qrcode of [{get_display_name(instance)}]', 'cyan')
-
-        uri = uris[i]
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-        )
-        qr.add_data(uri)
-        qr.print_ascii()
